@@ -1,10 +1,11 @@
 import requests
 import streamlit as st
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 from opyrator.components import outputs
 from nlpretext import Preprocessor
 from nlpretext.basic.preprocess import normalize_whitespace, fix_bad_unicode
+from typing import Dict
 
 
 preprocessor = Preprocessor()
@@ -13,19 +14,15 @@ preprocessor.pipe(fix_bad_unicode)
 
 
 class TextGenerationInput(BaseModel):
-    model_url: HttpUrl = Field(
-        '',
-        title="Model URL",
-        description="URL to request API.",
-    )
-
     context: str = Field(
         title="Input Context",
         description="Context to analysis sentiment.",
     )
 
 
-def process(model_url, context):
+def process(context: str) -> Dict:
+    query_param = st.experimental_get_query_params()
+    model_url = query_param['api'][0]
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     response = requests.post(url=model_url, headers=headers, json={"sentence" : preprocessor.run(context)})
     predictions = response.json()
@@ -33,25 +30,15 @@ def process(model_url, context):
     return predictions
 
 
-def plot_bar_chart(predictions):
-    import plotly.express as px
+def xangle_sentiment_analysis(input: TextGenerationInput) -> outputs.ClassificationOutput:
+    context = input.context
 
-    predictions = [{'label': k, 'score': v} for k, v in predictions.items()]
+    predictions = process(context)
 
-    fig = px.bar(
-        predictions,
-        x="label",
-        y="score",
+    return outputs.ClassificationOutput(
+        __root__=[
+            outputs.ScoredLabel(label=label, score=score)
+            for label, score in predictions.items()
+        ]
     )
 
-    st.plotly_chart(fig)
-
-
-def xangle_sentiment_analysis(input: TextGenerationInput) -> outputs.ClassificationOutput:
-    """Input Model URL on sidebar."""
-    context = input.context
-    model_url = input.model_url
-
-    predictions = process(model_url, context)
-
-    plot_bar_chart(predictions)
