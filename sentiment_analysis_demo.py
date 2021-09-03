@@ -2,7 +2,6 @@ import requests
 import streamlit as st
 
 from pydantic import BaseModel, Field
-from opyrator.components import outputs
 from nlpretext import Preprocessor
 from nlpretext.basic.preprocess import normalize_whitespace, fix_bad_unicode
 
