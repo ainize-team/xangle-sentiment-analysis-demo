@@ -36,7 +36,8 @@ def process(context: str) -> str:
             for label, score in result_dict.items():
                 if score > prev_score:
                     results = label
-            
+                    prev_score = score
+                    
         except:
             results = 'Endpoint API Internal error occurs.'
     else:
