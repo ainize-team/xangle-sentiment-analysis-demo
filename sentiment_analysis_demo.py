@@ -29,7 +29,13 @@ def process(context: str) -> str:
         headers = {'Content-Type': 'application/json; charset=utf-8'}
         try:
             response = requests.post(url=api_url, headers=headers, json={"sentence": preprocessor.run(context)})
-            results = response.json()
+            result_dict = response.json()
+
+            results = ''
+            prev_score = 0
+            for label, score in result_dict.items():
+                if score > prev_score:
+                    results = label
             
         except:
             results = 'Endpoint API Internal error occurs.'
