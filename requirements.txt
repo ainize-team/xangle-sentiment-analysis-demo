@@ -1,0 +1,4 @@
+opyrator==0.0.12
+watchdog==2.1.5
+nlpretext==1.0.4
+streamlit==0.85.0
