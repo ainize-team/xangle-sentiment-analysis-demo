@@ -2,10 +2,8 @@ import requests
 import streamlit as st
 
 from pydantic import BaseModel, Field
-from opyrator.components import outputs
 from nlpretext import Preprocessor
 from nlpretext.basic.preprocess import normalize_whitespace, fix_bad_unicode
-from typing import Dict
 
 
 preprocessor = Preprocessor()
@@ -20,25 +18,37 @@ class TextGenerationInput(BaseModel):
     )
 
 
-def process(context: str) -> Dict:
+class SentimentAnalysisOutput(BaseModel):
+    output: str
+
+
+def process(context: str) -> str:
     query_param = st.experimental_get_query_params()
-    model_url = query_param['api'][0]
-    headers = {'Content-Type': 'application/json; charset=utf-8'}
-    response = requests.post(url=model_url, headers=headers, json={"sentence" : preprocessor.run(context)})
-    predictions = response.json()
+    if 'api' in query_param:
+        api_url = query_param['api'][0]
+        headers = {'Content-Type': 'application/json; charset=utf-8'}
+        try:
+            response = requests.post(url=api_url, headers=headers, json={"sentence": preprocessor.run(context)})
+            result_dict = response.json()
 
-    return predictions
+            results = ''
+            prev_score = 0
+            for label, score in result_dict.items():
+                if score > prev_score:
+                    results = label
+                    prev_score = score
+                    
+        except:
+            results = 'Endpoint API Internal error occurs.'
+    else:
+        results = 'There is no endpoint API in Query String.'
+
+    return results
 
 
-def xangle_sentiment_analysis(input: TextGenerationInput) -> outputs.ClassificationOutput:
+def xangle_sentiment_analysis(input: TextGenerationInput) -> SentimentAnalysisOutput:
     context = input.context
 
-    predictions = process(context)
+    results = process(context)
 
-    return outputs.ClassificationOutput(
-        __root__=[
-            outputs.ScoredLabel(label=label, score=score)
-            for label, score in predictions.items()
-        ]
-    )
-
+    return SentimentAnalysisOutput(output=results)
